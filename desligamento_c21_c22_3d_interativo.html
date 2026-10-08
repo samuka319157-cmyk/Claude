@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Desligamento C21/C22 – UFV São George 2 – reconstituição</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#E9EDF2; --panel:#F7F9FB; --ink:#1A2433; --muted:#5B6878; --line:#C9D1DB;
+  --amber:#D98A12; --arc:#7B68EE; --ok:#2E8B57; --open:#C0392B;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1622; --panel:#172131; --ink:#E6EBF2; --muted:#93A1B4; --line:#2A3850;
+    --amber:#F2A93B; --arc:#A99BFF; --ok:#4CC38A; --open:#FF6B5B;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1622; --panel:#172131; --ink:#E6EBF2; --muted:#93A1B4; --line:#2A3850;
+  --amber:#F2A93B; --arc:#A99BFF; --ok:#4CC38A; --open:#FF6B5B;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+header{padding:14px 20px 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px}
+h1{font-family:var(--f-num);font-weight:700;font-size:1.55rem;letter-spacing:.01em;margin:0}
+header p{margin:0;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;padding:6px 20px 0}
+.scene{position:relative;border-radius:10px;overflow:hidden;background:#121A29;min-height:320px;aspect-ratio:16/9}
+#c3d{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none}
+#c3d.drag{cursor:grabbing}
+.hint{margin:0;padding:2px 0 0;color:var(--muted);font-size:.82rem}
+button.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.hud{position:absolute;pointer-events:none;color:#EAF0F7;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.clock{left:16px;top:12px}
+.clock .date{font-family:var(--f-num);font-size:1.05rem;opacity:.85}
+.clock .time{font-family:var(--f-num);font-weight:700;font-size:clamp(1.9rem,4.6vw,3.2rem);line-height:1;font-variant-numeric:tabular-nums}
+.clock .tz{font-size:.8rem;opacity:.8}
+.clock .brt{font-family:var(--f-num);font-size:1rem;opacity:.85;margin-top:2px;font-variant-numeric:tabular-nums}
+.windbox{right:14px;top:10px;text-align:right}
+.windbox canvas{width:96px;height:96px;display:block;margin-left:auto}
+.windbox .v{font-family:var(--f-num);font-weight:700;font-size:1.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.windbox .s{font-size:.78rem;opacity:.85}
+.breakers{left:16px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+.cb{font-family:var(--f-num);font-size:.95rem;padding:3px 9px;border-radius:5px;background:rgba(20,30,46,.75);border:1px solid rgba(255,255,255,.18)}
+.cb b{font-weight:600}
+.cb.closed b{color:#7EE2A8}.cb.open b{color:#FF8A7A}
+.stagebadge{left:50%;transform:translateX(-50%);top:12px;font-family:var(--f-num);font-size:1.15rem;padding:4px 10px;border-radius:5px;background:rgba(123,104,238,.85);display:none}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card h2{font-family:var(--f-num);font-weight:600;font-size:1.08rem;margin:0 0 4px}
+.card .sub{color:var(--muted);font-size:.82rem;margin:0 0 6px}
+#cx{width:100%;height:auto;aspect-ratio:1/0.95;display:block}
+#spark{width:100%;height:84px;display:block}
+.log{list-style:none;margin:0;padding:0;font-size:.86rem;max-height:220px;overflow:auto}
+.log li{padding:4px 0 4px 10px;border-left:3px solid transparent;color:var(--muted)}
+.log li.done{color:var(--ink)}
+.log li.now{border-left-color:var(--amber);color:var(--ink);font-weight:600}
+.log time{font-family:var(--f-num);font-variant-numeric:tabular-nums;margin-right:6px}
+.main{min-width:0}
+.controls{display:flex;align-items:center;gap:12px;padding:12px 0 4px;flex-wrap:wrap}
+button,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 14px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tl{position:relative;flex:1 1 320px;min-width:240px;padding-top:20px}
+.tl input{width:100%;accent-color:var(--amber)}
+.mk{position:absolute;top:0;transform:translateX(-50%);font-family:var(--f-num);font-size:.8rem;color:var(--muted);white-space:nowrap}
+.mk.fault{color:var(--amber);font-weight:600}
+.note{padding:4px 0 18px;color:var(--muted);font-size:.84rem;max-width:1100px}
+.note b{color:var(--ink);font-weight:600}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .side{display:grid;grid-template-columns:1fr 1fr}
+}
+@media (max-width:600px){
+  .side{grid-template-columns:1fr}
+  .windbox canvas{width:72px;height:72px}
+  .layout,header{padding-left:12px;padding-right:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Desligamento dos circuitos C21 e C22, UFV São George 2</h1>
+  <p>Reconstituição do evento de 04/10/2026 no vão entre P.1/08H e P.1/09H</p>
+</header>
+
+<div class="layout">
+ <div class="main">
+  <div class="scene" id="scene">
+    <canvas id="c3d" aria-label="Animação 3D do vão com os circuitos C22 e C21 sob vento"></canvas>
+    <div class="hud clock">
+      <div class="date">04/10/2026</div>
+      <div class="time" id="tLocal">05:20:00,00</div>
+      <div class="tz">hora local de Mato Grosso do Sul (UTC−4)</div>
+      <div class="brt" id="tBrt">Brasília (oscilografia): 06:20:00,00</div>
+    </div>
+    <div class="hud windbox">
+      <canvas id="dial" width="192" height="192"></canvas>
+      <div class="v" id="wInst">0,0 m/s</div>
+      <div class="s" id="wRec">registro 1 min: –</div>
+    </div>
+    <div class="hud breakers">
+      <span class="cb closed" id="cb22">352-CUB22 (C22) <b>fechado</b></span>
+      <span class="cb closed" id="cb21">352-CUB21 (C21) <b>fechado</b></span>
+    </div>
+    <div class="hud stagebadge" id="stage">T1</div>
+  </div>
+<div class="controls">
+    <button id="play" type="button">Pausar</button>
+    <button id="restart" type="button">Reiniciar</button>
+    <button id="viewAll" type="button" title="Voltar ao enquadramento inicial">Vista geral</button>
+    <button id="viewContact" type="button" title="Aproxima a câmera do ponto de contato B21–A22 e acompanha o movimento">Zoom no contato</button>
+    <label>Velocidade
+      <select id="speed">
+        <option value="0.5">0,5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+      </select>
+    </label>
+    <div class="tl" id="tl">
+      <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Linha do tempo">
+    </div>
+  </div>
+  
+  <p class="hint"><b>Câmera:</b> arraste para girar · botão direito ou Shift+arrastar para mover · roda do mouse (ou pinça) para zoom · duplo clique para ir ao ponto de contato.</p>
+  <p class="note"><b>Animação ilustrativa.</b> O vento segue o registro de 1 minuto da estação GEO02.6-MET-EPE. A oscilação instantânea entre os registros é uma reconstituição, com rajada estimada em cerca de 1,4 vez o valor registrado. O balanço dos cabos é calculado como pêndulo amortecido com as massas e diâmetros reais do Magnolia 954 e do Oxlip 4/0, a geometria da estrutura 2N1 (DET-805) e o vão de 77 m. Duas premissas ainda dependem de verificação em campo: o faseamento (fase A ao norte) e a flecha do Magnolia, adotada 0,5 m acima do projeto. A aproximação final entre B21 e A22 representa a hipótese de rajada local, lateral e ascendente. Os tempos das etapas T1 a T3 vêm da oscilografia e são aproximados. Movimentos e distâncias não estão em escala exata nem servem como prova.</p>
+  
+   </div>
+
+  <aside class="side">
+    <div class="card">
+      <h2>Corte no meio do vão</h2>
+      <p class="sub">Olhando para leste, sentido da SE coletora. Norte à esquerda.</p>
+      <canvas id="cx" width="620" height="590"></canvas>
+    </div>
+    <div class="card">
+      <h2>Vento na GEO02.6-MET-EPE</h2>
+      <p class="sub">Registro de 1 min, a 14 m da rede.</p>
+      <canvas id="spark" width="620" height="168"></canvas>
+    </div>
+    <div class="card">
+      <h2>Sequência</h2>
+      <ul class="log" id="log"></ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+// ---------- Dados ----------
+const MIN0 = 5*3600+10*60;              // 05:10 (rótulo do 1º registro)
+const VREC=[2.5,2.9,2.8,2.8,2.7,2.4,2.6,2.4,2.5,2.3,2.1,1.9,1.9,1.6,0.2,0.5,3.9,5.3,9.0,10.4,10.2,7.5,5.9,5.8,5.0,6.8,8.6,12.6,10.4,9.4,6.1,8.0,7.5,5.4,5.9,10.0,6.0,4.3,7.4,7.1,5.1];
+const DREC=[78,8,150,83,149,80,8,10,14,22,83,13,91,147,181,219,206,213,214,197,189,128,143,157,152,175,205,172,193,222,188,174,174,148,161,135,197,138,197,128,164];
+const TF = 5*3600+37*60+7.96;           // início do arco (hora local)
+const T_T2 = TF+0.170, T_O22 = TF+0.330, T_O21 = TF+0.475;
+const SIM0 = 5*3600+20*60, SIMEND = 5*3600+45*60;
+const SEGS=[ // [início, fim, taxa sim/real]
+  [SIM0, 5*3600+36*60+40, 60],
+  [5*3600+36*60+40, TF-1.46, 2],
+  [TF-1.46, TF-0.06, 0.5],
+  [TF-0.06, TF+0.64, 1/25],
+  [TF+0.64, 5*3600+37*60+20, 1],
+  [5*3600+37*60+20, SIMEND, 60]
+];
+let TAU_TOTAL=0; const SEGT=[];
+for(const s of SEGS){SEGT.push(TAU_TOTAL); TAU_TOTAL+=(s[1]-s[0])/s[2];}
+function tauToSim(tau){
+  for(let i=SEGS.length-1;i>=0;i--){ if(tau>=SEGT[i]){const s=SEGS[i]; return Math.min(s[1], s[0]+(tau-SEGT[i])*s[2]);} }
+  return SIM0;
+}
+function simToTau(t){
+  for(let i=0;i<SEGS.length;i++){const s=SEGS[i]; if(t<=s[1]) return SEGT[i]+(t-s[0])/s[2];}
+  return TAU_TOTAL;
+}
+function rateAt(tau){for(let i=SEGS.length-1;i>=0;i--) if(tau>=SEGT[i]) return SEGS[i][2]; return 60;}
+
+// ---------- Vento ----------
+const TURB=[[23,0.9,0.10],[11,2.1,0.09],[6.5,4.0,0.08],[3.7,1.3,0.06],[2.3,5.2,0.04]];
+function recIdx(t){return (t-(MIN0-30))/60;} // centro do registro no meio do minuto que termina no rótulo
+function wind1(t){
+  const x=Math.max(0,Math.min(VREC.length-1,recIdx(t)));
+  const i=Math.floor(x), j=Math.min(i+1,VREC.length-1), f=x-i;
+  const v=VREC[i]*(1-f)+VREC[j]*f;
+  const a=DREC[i]*Math.PI/180, b=DREC[j]*Math.PI/180;
+  const sx=Math.sin(a)*VREC[i]*(1-f)+Math.sin(b)*VREC[j]*f, cy=Math.cos(a)*VREC[i]*(1-f)+Math.cos(b)*VREC[j]*f;
+  let d=Math.atan2(sx,cy)*180/Math.PI; if(d<0)d+=360;
+  return {v,d};
+}
+function windInst(t){
+  const w=wind1(t);
+  let tu=0; for(const [p,ph,a] of TURB) tu+=a*Math.sin(2*Math.PI*t/p+ph);
+  const g=6*Math.exp(-0.5*Math.pow((t-(TF-1.0))/1.2,2));
+  const v=Math.max(0,w.v*(1+tu)+g);
+  const d=w.d+8*Math.sin(2*Math.PI*t/9.3);
+  return {v,d};
+}
+function recordAt(t){ // valor do registro com rótulo = minuto corrente
+  const k=Math.floor((t-MIN0)/60); if(k<0||k>=VREC.length) return null;
+  return {v:VREC[k],d:DREC[k],k};
+}
+
+// ---------- Física do balanço (pré-calculada) ----------
+const G=9.81, RHO=1.225;
+const CAB={
+  M:{d:0.02855,w:1.333*G,f:2.50,z:0.10},   // Magnolia: flecha de projeto 2,00 m + 0,5 m (hipótese)
+  O:{d:0.01325,w:0.2957*G,f:2.12,z:0.06}   // Oxlip: flecha de projeto a 20 °C
+};
+const DT=0.02, PT0=SIM0-60, PN=Math.ceil((SIMEND+5-PT0)/DT);
+const phM=new Float32Array(PN), phO=new Float32Array(PN), phMs=new Float32Array(PN), phOs=new Float32Array(PN);
+(function precompute(){
+  const st={M:[0,0],O:[0,0]};
+  for(const k of ["M","O"]){const c=CAB[k]; const w=windInst(PT0); const vn=-w.v*Math.cos(w.d*Math.PI/180); st[k][0]=Math.atan(0.5*RHO*vn*Math.abs(vn)*c.d/c.w);}
+  for(let i=0;i<PN;i++){
+    const t=PT0+i*DT, w=windInst(t), vn=-w.v*Math.cos(w.d*Math.PI/180), q=0.5*RHO*vn*Math.abs(vn);
+    for(const k of ["M","O"]){
+      const c=CAB[k], L=c.f*0.9, om=Math.sqrt(G/L); let [p,o]=st[k];
+      const acc=(G/L)*((q*c.d/c.w)*Math.cos(p)-Math.sin(p))-2*c.z*om*o;
+      o+=acc*DT; p+=o*DT; st[k]=[p,o];
+    }
+    phM[i]=st.M[0]; phO[i]=st.O[0];
+  }
+  const a=DT/5;
+  function smooth(src,dst){let s=src[0];for(let i=0;i<PN;i++){s+=a*(src[i]-s);dst[i]=s;} s=dst[PN-1]; for(let i=PN-1;i>=0;i--){s+=a*(dst[i]-s);dst[i]=s;}}
+  smooth(phM,phMs); smooth(phO,phOs);
+})();
+function phAt(arr,t){const x=(t-PT0)/DT; const i=Math.max(0,Math.min(PN-2,Math.floor(x))); const f=Math.min(1,Math.max(0,x-i)); return arr[i]*(1-f)+arr[i+1]*f;}
+
+// ---------- Geometria ----------
+const HALF=38.5;                       // vão de 77 m
+const ZU=12.95, ZL=11.75;              // nível 1 (C22) e nível 2 (C21)
+const COND=[ // y nos postes oeste (P.1/08H) e leste (P.1/09H); faseamento admitido A ao norte
+  {id:"A22",c:"C22",ph:"A",cab:"M",yW:1.10, yE:1.10, z:ZU},
+  {id:"B22",c:"C22",ph:"B",cab:"M",yW:0.309,yE:-0.309,z:ZU},
+  {id:"C22",c:"C22",ph:"C",cab:"M",yW:-1.10,yE:-1.10,z:ZU},
+  {id:"A21",c:"C21",ph:"A",cab:"O",yW:1.10, yE:1.10, z:ZL},
+  {id:"B21",c:"C21",ph:"B",cab:"O",yW:-0.296,yE:0.296,z:ZL},
+  {id:"C21",c:"C21",ph:"C",cab:"O",yW:-1.10,yE:-1.10,z:ZL}
+];
+function smoothstep(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
+function kickAmount(t){
+  if(t<TF-1.6) return 0;
+  if(t<=TF) return smoothstep(TF-1.6,TF,t);
+  if(t<=T_O21) return 1;
+  return 1-smoothstep(T_O21,T_O21+2.5,t);
+}
+function state(t,rate){
+  const blend=Math.max(0,Math.min(1,(rate-6)/20));
+  const pm=phAt(phM,t)*(1-blend)+phAt(phMs,t)*blend;
+  const po=phAt(phO,t)*(1-blend)+phAt(phOs,t)*blend;
+  const mid={};
+  for(const c of COND){
+    const f=CAB[c.cab].f, p=c.cab==="M"?pm:po, y0=(c.yW+c.yE)/2;
+    mid[c.id]={y:y0+f*Math.sin(p), z:c.z-f*Math.cos(p), rest:{y:y0,z:c.z-f}};
+  }
+  const k=kickAmount(t); let kick={y:0,z:0};
+  if(k>0){
+    const P=mid.B21, Q=mid.A22; const dy=P.y-Q.y, dz=P.z-Q.z, L=Math.hypot(dy,dz)||1;
+    const Ty=Q.y+dy/L*0.05, Tz=Q.z+dz/L*0.05;
+    kick={y:(Ty-P.y)*k, z:(Tz-P.z)*k};
+    P.y+=kick.y; P.z+=kick.z;
+  }
+  return {pm,po,mid,kick};
+}
+function condPoint(c,s,S){
+  const f=CAB[c.cab].f, p=c.cab==="M"?S.pm:S.po, sag=4*f*s*(1-s);
+  let y=c.yW+(c.yE-c.yW)*s+sag*Math.sin(p);
+  let z=c.z-sag*Math.cos(p);
+  if(c.id==="B21"){const sh=4*s*(1-s); y+=S.kick.y*sh; z+=S.kick.z*sh;}
+  return [-HALF+2*HALF*s,y,z];
+}
+
+// ---------- Câmera ----------
+const cv=document.getElementById("c3d"), ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+const CAM={p:[-50,-15,12.2], t:[4,1.5,10.3], fov:50};
+// câmera orbital: alvo T, azimute az, elevação el, distância dist (suavizada até o objetivo "goal")
+const HOME=(()=>{const d=CAM.p.map((v,i)=>v-CAM.t[i]); const r=Math.hypot(...d); return {T:[...CAM.t],az:Math.atan2(d[1],d[0]),el:Math.asin(d[2]/r),dist:r};})();
+const cam={T:[...HOME.T],az:HOME.az,el:HOME.el,dist:HOME.dist};
+const goal={T:[...HOME.T],az:HOME.az,el:HOME.el,dist:HOME.dist};
+let follow=false;
+const DIST_MIN=1, DIST_MAX=300, EL_MAX=1.5;
+function clampOrbit(o){
+  o.dist=Math.min(DIST_MAX,Math.max(DIST_MIN,o.dist));
+  o.T[2]=Math.max(0,o.T[2]);
+  const lo=Math.asin(Math.max(-1,Math.min(1,(0.5-o.T[2])/o.dist)));   // câmera sempre acima do solo
+  o.el=Math.min(EL_MAX,Math.max(lo,o.el));
+}
+let basis;
+function setupCam(){
+  const [px,py,pz]=CAM.p,[tx,ty,tz]=CAM.t;
+  let f=[tx-px,ty-py,tz-pz]; const fl=Math.hypot(...f); f=f.map(v=>v/fl);
+  let r=[f[1]*1-f[2]*0, f[2]*0-f[0]*1, 0]; // f × up(0,0,1)
+  r=[f[1],-f[0],0]; const rl=Math.hypot(...r); r=r.map(v=>v/rl);
+  const u=[r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
+  basis={f,r,u,k:(H/2)/Math.tan(CAM.fov*Math.PI/360)};
+}
+function updateCam(dt,S){
+  if(follow){const a=midXYZ("A22",S), b=midXYZ("B21",S); goal.T=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];}
+  clampOrbit(goal);
+  const k=1-Math.exp(-dt*9);
+  for(let i=0;i<3;i++) cam.T[i]+=(goal.T[i]-cam.T[i])*k;
+  cam.az+=(goal.az-cam.az)*k; cam.el+=(goal.el-cam.el)*k; cam.dist+=(goal.dist-cam.dist)*k;
+  clampOrbit(cam);
+  const ce=Math.cos(cam.el);
+  CAM.t=cam.T;
+  CAM.p=[cam.T[0]+cam.dist*ce*Math.cos(cam.az), cam.T[1]+cam.dist*ce*Math.sin(cam.az), cam.T[2]+cam.dist*Math.sin(cam.el)];
+  setupCam();
+}
+function proj(x,y,z){
+  const d=[x-CAM.p[0],y-CAM.p[1],z-CAM.p[2]];
+  const zc=d[0]*basis.f[0]+d[1]*basis.f[1]+d[2]*basis.f[2];
+  const xc=d[0]*basis.r[0]+d[1]*basis.r[1]+d[2]*basis.r[2];
+  const yc=d[0]*basis.u[0]+d[1]*basis.u[1]+d[2]*basis.u[2];
+  if(zc<0.5) return null;
+  return {x:W/2+basis.k*xc/zc, y:H/2-basis.k*yc/zc, z:zc};
+}
+function resize(){
+  const r=cv.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1);
+  W=r.width; H=r.height; cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0); setupCam();
+}
+window.addEventListener("resize",resize);
+if(window.ResizeObserver) new ResizeObserver(()=>resize()).observe(document.getElementById("scene"));
+
+// ---------- Partículas de vento ----------
+const PARTS=[]; for(let i=0;i<420;i++) PARTS.push({x:-60+Math.random()*130,y:-45+Math.random()*90,z:0.5+Math.random()*20,on:Math.random()});
+function stepParticles(dtReal,w){
+  const a=w.d*Math.PI/180, vx=-Math.sin(a)*w.v, vy=-Math.cos(a)*w.v; // sopra para (d+180)
+  const frac=Math.min(1,0.08+w.v/13);
+  for(const p of PARTS){
+    p.x+=vx*dtReal*1.0; p.y+=vy*dtReal*1.0;
+    if(p.y>45||p.y<-45||p.x>70||p.x<-60){
+      if(Math.abs(vy)>=Math.abs(vx)){p.y=vy>0?-45:45; p.x=-60+Math.random()*130;}
+      else{p.x=vx>0?-60:70; p.y=-45+Math.random()*90;}
+      p.z=0.5+Math.random()*20; p.on=Math.random();
+    }
+    p.vis=p.on<frac; p.vx=vx; p.vy=vy;
+  }
+}
+
+// ---------- Desenho 3D ----------
+function poly(pts,fill,stroke,lw){
+  const P=pts.map(p=>proj(...p)); if(P.some(q=>!q)) return;
+  ctx.beginPath(); ctx.moveTo(P[0].x,P[0].y); for(let i=1;i<P.length;i++) ctx.lineTo(P[i].x,P[i].y); ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+}
+function line3(a,b,col,lw){const p=proj(...a),q=proj(...b); if(!p||!q)return; ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}
+function text3(s,x,y,z,col,size,align){const p=proj(x,y,z); if(!p)return; ctx.fillStyle=col; ctx.font=`600 ${size}px "Barlow Condensed",sans-serif`; ctx.textAlign=align||"center"; ctx.fillText(s,p.x,p.y);}
+
+function drawSky(t){
+  const dawn=smoothstep(5*3600+20*60,5*3600+45*60,t);
+  const g=ctx.createLinearGradient(0,0,0,H*0.62);
+  g.addColorStop(0,`rgb(${18+14*dawn},${26+20*dawn},${41+30*dawn})`);
+  g.addColorStop(0.75,`rgb(${44+40*dawn},${56+38*dawn},${80+30*dawn})`);
+  g.addColorStop(1,`rgb(${86+90*dawn},${84+50*dawn},${96+20*dawn})`);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // brilho do amanhecer a leste
+  const h=proj(2000,0,0); if(h){const rg=ctx.createRadialGradient(h.x,h.y,0,h.x,h.y,W*0.55); rg.addColorStop(0,`rgba(255,170,90,${0.10+0.35*dawn})`); rg.addColorStop(1,"rgba(255,170,90,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);}
+}
+function horizonY(){
+  const f=basis.f, fl=Math.hypot(f[0],f[1]);
+  const q=proj(CAM.p[0]+f[0]/fl*20000,CAM.p[1]+f[1]/fl*20000,0); return q?q.y:H*0.45;
+}
+function drawGround(){
+  const hy=horizonY();
+  const g=ctx.createLinearGradient(0,hy,0,H); g.addColorStop(0,"#34433A"); g.addColorStop(1,"#141C17");
+  ctx.fillStyle=g; if(hy<H){const y0=Math.max(0,hy); ctx.fillRect(0,y0,W,H-y0);}
+  // faixa da RMT (15 m)
+  poly([[-48,-7.5,0],[400,-7.5,0],[400,7.5,0],[-48,7.5,0]],"rgba(150,135,95,0.18)");
+  // fileiras de trackers N-S dos dois lados da faixa
+  for(let x=-44;x<=160;x+=6.2){
+    for(const [y0,y1] of [[9.5,60],[-60,-9.5]]){
+      poly([[x-1.15,y0,1.7],[x+1.15,y0,1.5],[x+1.15,y1,1.5],[x-1.15,y1,1.7]],"rgba(30,46,74,0.85)","rgba(80,110,150,0.25)",0.5);
+    }
+  }
+}
+function drawCompass(){
+  // rosa dos ventos orientada conforme a câmera (direções projetadas a partir do meio do vão)
+  const o=proj(0,0,0), n=proj(0,30,0), e=proj(30,0,0); if(!o||!n||!e) return;
+  let N=[n.x-o.x,n.y-o.y], E=[e.x-o.x,e.y-o.y];
+  // achata menos que a perspectiva real para facilitar a leitura
+  const nl=Math.hypot(...N), el=Math.hypot(...E); N=[N[0]/nl,N[1]/nl*1.0]; E=[E[0]/el,E[1]/el];
+  const cx0=W-78, cy0=H-110, R=Math.min(46,W*0.05);
+  ctx.save();
+  ctx.fillStyle="rgba(14,22,36,0.55)"; ctx.beginPath(); ctx.arc(cx0,cy0,R+22,0,Math.PI*2); ctx.fill();
+  const arms=[["N",N,1],["S",N,-1],["L",E,1],["O",E,-1]];
+  for(const [lab,v,sg] of arms){
+    const tx=cx0+v[0]*R*sg, ty=cy0+v[1]*R*sg, px=-v[1]*7, py=v[0]*7;
+    ctx.fillStyle=lab==="N"?"#F2A93B":"rgba(225,232,240,0.85)";
+    ctx.beginPath(); ctx.moveTo(cx0+px,cy0+py); ctx.lineTo(tx,ty); ctx.lineTo(cx0-px,cy0-py); ctx.closePath(); ctx.fill();
+    ctx.font='600 15px "Barlow Condensed",sans-serif'; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(lab,cx0+v[0]*(R+13)*sg,cy0+v[1]*(R+13)*sg);
+  }
+  ctx.restore();
+  // seta no solo indicando o sentido da SE
+  text3("sentido SE coletora (leste)",-14,-5.6,0.1,"rgba(230,236,244,0.75)",13,"left");
+  line3([-14,-4.9,0.05],[-2,-4.9,0.05],"rgba(230,236,244,0.6)",1.5);
+  poly([[-2,-4.5,0.05],[-2,-5.3,0.05],[-0.4,-4.9,0.05]],"rgba(230,236,244,0.75)");
+}
+function drawPole(x,name,westPole){
+  const top=15-2.1, w0=0.42, w1=0.22;
+  poly([[x,-w0/2,0],[x,w0/2,0],[x,w1/2,top],[x,-w1/2,top]],"#9EA6AE","#6F777F",0.8);
+  poly([[x-0.12,-w0/2,0],[x-0.12,w0/2,0],[x-0.12,w1/2,top],[x-0.12,-w1/2,top]],"#848C94");
+  for(const [z,cy] of [[ZU-0.38,westPole?0.309:-0.309],[ZL-0.38,westPole?-0.296:0.296]]){
+    poly([[x,-1.2,z],[x,1.2,z],[x,1.2,z-0.1],[x,-1.2,z-0.1]],"#B9C0C8","#7D858D",0.6);
+    for(const y of [1.1,cy,-1.1]) line3([x,y,z],[x,y,z+0.36],"#C7CDD4",2.2);
+  }
+  text3(name,x,0,top+1.2,"rgba(235,240,246,0.9)",14);
+}
+function condStyle(c,t){
+  const deen=(c.c==="C22"&&t>=T_O22)||(c.c==="C21"&&t>=T_O21);
+  const hot=(c.id==="B21"||c.id==="A22")&&t>TF-6&&t<T_O21+3;
+  let col=c.cab==="M"?"#DDE3EA":"#9CC3DF";
+  if(hot) col="#F2A93B";
+  return {col,alpha:deen?0.38:1,lw:c.cab==="M"?3.2:1.8};
+}
+function drawConductors(S,t){
+  const order=[...COND].sort((a,b)=>b.yW-a.yW);
+  for(const c of order){
+    const st=condStyle(c,t);
+    ctx.globalAlpha=st.alpha; ctx.strokeStyle=st.col; ctx.beginPath();
+    let started=false;
+    for(let i=0;i<=48;i++){
+      const s=i/48, p=proj(...condPoint(c,s,S)); if(!p) continue;
+      const orig=st.lw*Math.max(0.5,Math.min(2.2,40/p.z));
+      const phys=(c.cab==="M"?CAB.M.d:CAB.O.d)*basis.k/p.z;
+      const mix=Math.max(0,Math.min(1,(25-p.z)/15));
+      const lw=orig+(Math.max(1.2,phys*1.6)-orig)*mix;
+      if(!started){ctx.moveTo(p.x,p.y);started=true;} else ctx.lineTo(p.x,p.y);
+      if(i===24) ctx.lineWidth=lw;
+    }
+    ctx.stroke(); ctx.globalAlpha=1;
+  }
+  text3("C22 · Magnolia 954 (nível 1)",-HALF+4,-1.6,ZU+0.35,"rgba(221,227,234,0.9)",13,"left");
+  text3("C21 · Oxlip 4/0 (nível 2)",-HALF+4,-1.6,ZL-1.2,"rgba(156,195,223,0.95)",13,"left");
+}
+function drawHotLabels(S,t){
+  if(!(t>TF-6&&t<T_O21+3)) return;
+  const a=midXYZ("A22",S), b=midXYZ("B21",S);
+  text3("A22",a[0],a[1]+0.6,a[2]+0.5,"#F2A93B",15); text3("B21",b[0],b[1]-0.6,b[2]-0.9,"#F2A93B",15);
+}
+function midXYZ(id,S){const c=COND.find(q=>q.id===id); return condPoint(c,0.5,S);}
+function jagged(a,b,n,amp){
+  const pts=[a]; for(let i=1;i<n;i++){const f=i/n; pts.push([a[0]+(b[0]-a[0])*f+(Math.random()-0.5)*amp*0.6,a[1]+(b[1]-a[1])*f+(Math.random()-0.5)*amp,a[2]+(b[2]-a[2])*f+(Math.random()-0.5)*amp]);} pts.push(b); return pts;
+}
+function drawArc3(a,b,intensity){
+  const pts=jagged(a,b,9,0.35).map(p=>proj(...p)); if(pts.some(p=>!p)) return;
+  ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
+  for(const [lw,col,blur] of [[9,"rgba(150,130,255,0.35)",30],[4,"rgba(200,190,255,0.8)",18],[1.6,"#FFFFFF",8]]){
+    ctx.shadowColor="rgba(170,150,255,0.9)"; ctx.shadowBlur=blur*intensity; ctx.strokeStyle=col; ctx.lineWidth=lw*intensity;
+    ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  }
+  const m=proj((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2);
+  const rg=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,90*intensity); rg.addColorStop(0,"rgba(235,230,255,0.55)"); rg.addColorStop(1,"rgba(235,230,255,0)");
+  ctx.fillStyle=rg; ctx.fillRect(m.x-120,m.y-120,240,240); ctx.restore();
+}
+function drawFault(S,t){
+  if(t<TF||t>=T_O21) return;
+  const fl=0.85+0.15*Math.random();
+  const B21=midXYZ("B21",S), A22=midXYZ("A22",S), A21=midXYZ("A21",S);
+  if(t<T_O22) drawArc3(B21,A22,fl);
+  if(t>=T_T2){ drawArc3(A21,B21,fl*0.9); if(t<T_O22) drawArc3(A21,A22,fl*0.7); }
+  if(t>=T_O22) drawArc3(A21,B21,fl);
+}
+function drawParticles(){
+  ctx.lineCap="round";
+  for(const p of PARTS){ if(!p.vis) continue;
+    const a=proj(p.x,p.y,p.z), b=proj(p.x-p.vx*0.35,p.y-p.vy*0.35,p.z); if(!a||!b) continue;
+    const al=Math.min(0.55,18/a.z); ctx.strokeStyle=`rgba(170,230,235,${al})`; ctx.lineWidth=Math.max(0.6,Math.min(2,30/a.z));
+    ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(a.x,a.y); ctx.stroke();
+  }
+}
+let flash=0;
+function render3D(t,S,dtReal,w){
+  ctx.clearRect(0,0,W,H);
+  drawSky(t); drawGround();
+  stepParticles(dtReal,w);
+  drawPole(HALF,"P.1/09H",false);
+  drawConductors(S,t);
+  drawPole(-HALF,"P.1/08H",true);
+  drawFault(S,t);
+  drawHotLabels(S,t);
+  drawParticles();
+  drawCompass();
+  // destaque no meio do vão antes da falta
+  if(t>TF-6&&t<TF){const m=proj(...midXYZ("B21",S)); if(m){ctx.strokeStyle="rgba(242,169,59,0.8)";ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(m.x,m.y-8,Math.max(26,520/m.z),0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}}
+  if(flash>0){ctx.fillStyle=`rgba(220,215,255,${flash})`;ctx.fillRect(0,0,W,H);}
+}
+
+// ---------- Corte transversal ----------
+const cx=document.getElementById("cx"), cxx=cx.getContext("2d");
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function renderCross(t,S){
+  const w=cx.width,h=cx.height, ink=cssVar("--ink"), muted=cssVar("--muted"), amber=cssVar("--amber"), line=cssVar("--line");
+  cxx.clearRect(0,0,w,h);
+  const sc=w/5.6, ox=w/2+30, z0=13.5;
+  const X=y=>ox-y*sc, Y=z=>(z0-z)*sc+18;      // norte à esquerda
+  cxx.font=`600 26px "Barlow Condensed",sans-serif`; cxx.fillStyle=muted; cxx.textAlign="left"; cxx.fillText("N",14,h-14); cxx.textAlign="right"; cxx.fillText("S",w-14,h-14);
+  // cruzetas (projeção no poste)
+  cxx.strokeStyle=line; cxx.lineWidth=6; cxx.setLineDash([]);
+  for(const z of [ZU-0.38,ZL-0.38]){cxx.beginPath();cxx.moveTo(X(1.2),Y(z));cxx.lineTo(X(-1.2),Y(z));cxx.stroke();}
+  cxx.lineWidth=10; cxx.beginPath(); cxx.moveTo(X(0),Y(ZU+0.2)); cxx.lineTo(X(0),Y(9.6)); cxx.stroke();
+  cxx.font=`500 18px "Barlow",sans-serif`; cxx.fillStyle=muted; cxx.textAlign="left";
+  cxx.fillText("cruzetas no poste (referência)",X(1.25)-2,Y(ZU-0.38)-12);
+  // posições
+  for(const c of COND){
+    const m=S.mid[c.id], r=c.cab==="M"?11:7, deen=(c.c==="C22"&&t>=T_O22)||(c.c==="C21"&&t>=T_O21);
+    cxx.setLineDash([4,4]); cxx.strokeStyle=muted; cxx.lineWidth=1.4; cxx.beginPath(); cxx.arc(X(m.rest.y),Y(m.rest.z),r,0,Math.PI*2); cxx.stroke(); cxx.setLineDash([]);
+    const hot=(c.id==="B21"||c.id==="A22")&&t>TF-6&&t<T_O21+3;
+    cxx.globalAlpha=deen?0.4:1; cxx.fillStyle=hot?amber:(c.cab==="M"?ink:"#5E9BC6");
+    cxx.beginPath(); cxx.arc(X(m.y),Y(m.z),r,0,Math.PI*2); cxx.fill(); cxx.globalAlpha=1;
+    cxx.fillStyle=ink; cxx.font=`600 20px "Barlow Condensed",sans-serif`; cxx.textAlign="center";
+    cxx.fillText(c.ph+c.c.slice(1),X(m.y),Y(m.z)-r-6);
+  }
+  // distância B21-A22
+  const a=S.mid.A22,b=S.mid.B21, d=Math.hypot(a.y-b.y,a.z-b.z);
+  cxx.strokeStyle=amber; cxx.lineWidth=2; cxx.setLineDash([6,5]); cxx.beginPath(); cxx.moveTo(X(a.y),Y(a.z)); cxx.lineTo(X(b.y),Y(b.z)); cxx.stroke(); cxx.setLineDash([]);
+  cxx.fillStyle=amber; cxx.font=`700 30px "Barlow Condensed",sans-serif`; cxx.textAlign="right";
+  cxx.fillText(`B21–A22 ≈ ${d.toFixed(2).replace(".",",")} m`,w-14,40);
+  // arco no corte
+  if(t>=TF&&t<T_O21){
+    const segs=[]; if(t<T_O22) segs.push([b,a]); if(t>=T_T2) segs.push([S.mid.A21,b]);
+    for(const [p,q] of segs){cxx.strokeStyle="rgba(150,130,255,0.95)";cxx.lineWidth=4;cxx.beginPath();const n=7;for(let i=0;i<=n;i++){const f=i/n;const yy=p.y+(q.y-p.y)*f+(i&&i<n?(Math.random()-0.5)*0.15:0);const zz=p.z+(q.z-p.z)*f+(i&&i<n?(Math.random()-0.5)*0.15:0);i?cxx.lineTo(X(yy),Y(zz)):cxx.moveTo(X(yy),Y(zz));}cxx.stroke();}
+  }
+  // seta do vento (componente sul → norte)
+  const wi=windInst(t), vn=-wi.v*Math.cos(wi.d*Math.PI/180);
+  const L=Math.max(-1,Math.min(1,vn/15))*w*0.32, yA=h-48;
+  if(Math.abs(L)>4){cxx.strokeStyle="#5FB8C0";cxx.fillStyle="#5FB8C0";cxx.lineWidth=5;cxx.beginPath();cxx.moveTo(ox+L/2,yA);cxx.lineTo(ox-L/2,yA);cxx.stroke();
+    const dir=Math.sign(L);cxx.beginPath();cxx.moveTo(ox-L/2-dir*14,yA);cxx.lineTo(ox-L/2+dir*4,yA-10);cxx.lineTo(ox-L/2+dir*4,yA+10);cxx.closePath();cxx.fill();}
+  cxx.fillStyle=muted; cxx.font=`500 18px "Barlow",sans-serif`; cxx.textAlign="center";
+  cxx.fillText(`vento transversal ao vão: ${Math.abs(vn).toFixed(1).replace(".",",")} m/s`,ox,h-14);
+}
+
+// ---------- Mostrador do vento ----------
+const dial=document.getElementById("dial"), dx=dial.getContext("2d");
+function renderDial(w){
+  const s=dial.width, c=s/2, R=s*0.4; dx.clearRect(0,0,s,s);
+  dx.strokeStyle="rgba(235,240,246,0.55)"; dx.lineWidth=2; dx.beginPath(); dx.arc(c,c,R,0,Math.PI*2); dx.stroke();
+  dx.fillStyle="rgba(235,240,246,0.9)"; dx.font=`600 24px "Barlow Condensed",sans-serif`; dx.textAlign="center"; dx.textBaseline="middle";
+  dx.fillText("N",c,c-R-14+12); dx.fillText("S",c,c+R+2); dx.fillText("L",c+R+2,c); dx.fillText("O",c-R-2,c);
+  // seta: aponta para onde o vento sopra, partindo da direção de origem
+  const a=w.d*Math.PI/180, fx=c+Math.sin(a)*R*0.85, fy=c-Math.cos(a)*R*0.85, tx=c-Math.sin(a)*R*0.6, ty=c+Math.cos(a)*R*0.6;
+  dx.strokeStyle="#8FE0E6"; dx.fillStyle="#8FE0E6"; dx.lineWidth=7; dx.lineCap="round";
+  dx.beginPath(); dx.moveTo(fx,fy); dx.lineTo(tx,ty); dx.stroke();
+  const ang=Math.atan2(ty-fy,tx-fx); dx.beginPath(); dx.moveTo(tx+Math.cos(ang)*16,ty+Math.sin(ang)*16); dx.lineTo(tx+Math.cos(ang+2.4)*18,ty+Math.sin(ang+2.4)*18); dx.lineTo(tx+Math.cos(ang-2.4)*18,ty+Math.sin(ang-2.4)*18); dx.closePath(); dx.fill();
+}
+
+// ---------- Gráfico do registro ----------
+const sp=document.getElementById("spark"), sx=sp.getContext("2d");
+function renderSpark(t){
+  const w=sp.width,h=sp.height, ink=cssVar("--ink"), muted=cssVar("--muted"), amber=cssVar("--amber"), line=cssVar("--line");
+  sx.clearRect(0,0,w,h);
+  const t0=MIN0, t1=MIN0+(VREC.length-1)*60, X=tt=>12+(tt-t0)/(t1-t0)*(w-24), Y=v=>h-26-(v/14)*(h-40);
+  sx.strokeStyle=line; sx.lineWidth=1; sx.beginPath(); sx.moveTo(12,Y(0)); sx.lineTo(w-12,Y(0)); sx.stroke();
+  sx.strokeStyle="#4FA9B3"; sx.lineWidth=3; sx.beginPath(); VREC.forEach((v,i)=>{const xx=X(t0+i*60),yy=Y(v); i?sx.lineTo(xx,yy):sx.moveTo(xx,yy);}); sx.stroke();
+  const xf=X(TF); sx.strokeStyle=amber; sx.setLineDash([5,4]); sx.beginPath(); sx.moveTo(xf,8); sx.lineTo(xf,Y(0)); sx.stroke(); sx.setLineDash([]);
+  sx.fillStyle=muted; sx.font=`500 20px "Barlow Condensed",sans-serif`; sx.textAlign="left"; sx.fillText("05:10",12,h-4); sx.textAlign="right"; sx.fillText("05:50",w-12,h-4); sx.textAlign="center"; sx.fillStyle=amber; sx.fillText("falta 05:37",xf,h-4);
+  sx.fillStyle=muted; sx.textAlign="left"; sx.fillText("12,6 m/s",X(MIN0+27*60)+8,Y(12.6)+6);
+  const xc=X(Math.max(t0,Math.min(t1,t))); sx.strokeStyle=ink; sx.lineWidth=2; sx.beginPath(); sx.moveTo(xc,8); sx.lineTo(xc,Y(0)); sx.stroke();
+}
+
+// ---------- Sequência ----------
+const EVENTS=[
+  [5*3600+24*60,"05:24","Calmaria (0,2 m/s)"],
+  [5*3600+26*60,"05:26","Chega a frente de rajada, vento de sul e sudoeste"],
+  [5*3600+29*60,"05:29","10,4 m/s em 5 minutos"],
+  [5*3600+37*60,"05:37","Rajada máxima do dia: 12,6 m/s (registro 1 min), de 172°"],
+  [TF,"05:37:07,96","T1: arco entre B21 (Oxlip) e A22 (Magnolia), partida de sobrecorrente"],
+  [T_T2,"+170 ms","T2: o arco envolve a A21"],
+  [T_O22,"+330 ms","Abre 352-CUB22, desliga o C22. Resta o curto AB no C21 (T3)"],
+  [T_O21,"+475 ms","Abre 352-CUB21, arco extinto"],
+  [5*3600+40*60,"05:40","Rajadas seguem, já sem os circuitos"]
+];
+const logEl=document.getElementById("log");
+EVENTS.forEach(e=>{const li=document.createElement("li"); li.innerHTML=`<time>${e[1]}</time>${e[2]}`; logEl.appendChild(li);});
+function renderLog(t){
+  let cur=-1; EVENTS.forEach((e,i)=>{if(t>=e[0]) cur=i;});
+  [...logEl.children].forEach((li,i)=>{li.className=i<cur?"done":i===cur?"now":"";});
+  const now=logEl.children[cur]; if(now&&now.dataset.seen!=="1"){now.dataset.seen="1"; now.scrollIntoView({block:"nearest"});}
+}
+
+// ---------- Linha do tempo ----------
+const scrub=document.getElementById("scrub"), tl=document.getElementById("tl");
+[[5*3600+29*60,"05:29 frente de rajada"],[TF,"05:37:08 falta",true],[SIMEND,"05:45"]].forEach(([t,lab,f])=>{
+  const s=document.createElement("span"); s.className="mk"+(f?" fault":""); s.textContent=lab;
+  const pct=simToTau(t)/TAU_TOTAL*100; s.style.left=Math.min(97,Math.max(3,pct))+"%"; tl.appendChild(s);
+});
+
+// ---------- Relógio ----------
+function fmt(t){const hh=Math.floor(t/3600),mm=Math.floor(t%3600/60),ss=Math.floor(t%60),cc=Math.floor((t%1)*100);
+  return `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")},${String(cc).padStart(2,"0")}`;}
+const elL=document.getElementById("tLocal"), elB=document.getElementById("tBrt"), elWI=document.getElementById("wInst"), elWR=document.getElementById("wRec");
+const cb21=document.getElementById("cb21"), cb22=document.getElementById("cb22"), stEl=document.getElementById("stage");
+function setCB(el,open){el.className="cb "+(open?"open":"closed"); el.querySelector("b").textContent=open?"aberto":"fechado";}
+
+// ---------- Loop ----------
+let tau=0, playing=true, speed=1, last=performance.now(), prevT=SIM0;
+if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){playing=false;}
+const playBtn=document.getElementById("play");
+function syncBtn(){playBtn.textContent=playing?"Pausar":"Reproduzir";}
+syncBtn();
+playBtn.onclick=()=>{ if(!playing&&tau>=TAU_TOTAL) tau=0; playing=!playing; syncBtn(); };
+document.getElementById("restart").onclick=()=>{tau=0;playing=true;syncBtn();};
+document.getElementById("speed").onchange=e=>{speed=parseFloat(e.target.value);};
+scrub.addEventListener("input",()=>{tau=scrub.value/1000*TAU_TOTAL;});
+document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="BUTTON"&&e.target.tagName!=="SELECT"&&e.target.tagName!=="INPUT"){e.preventDefault();playBtn.click();}});
+
+function frame(now){
+  const dtReal=Math.min(0.1,(now-last)/1000); last=now;
+  if(playing){ tau+=dtReal*speed; if(tau>=TAU_TOTAL){tau=TAU_TOTAL; playing=false; syncBtn();} }
+  const t=tauToSim(tau), rate=rateAt(tau);
+  if((prevT<TF&&t>=TF)||(prevT<T_T2&&t>=T_T2)) flash=0.55;
+  if(prevT<T_O22&&t>=T_O22) flash=0.25;
+  flash=Math.max(0,flash-dtReal*1.6);
+  prevT=t;
+  const w=windInst(t), S=state(t,rate);
+  updateCam(dtReal,S);
+  render3D(t,S,playing?dtReal:0,w);
+  renderCross(t,S); renderDial(w); renderSpark(t); renderLog(t);
+  elL.textContent=fmt(t); elB.textContent="Brasília (oscilografia): "+fmt(t+3600);
+  elWI.textContent=w.v.toFixed(1).replace(".",",")+" m/s";
+  const r=recordAt(t); elWR.textContent=r?`registro 1 min (${fmt(MIN0+r.k*60).slice(0,5)}): ${String(r.v).replace(".",",")} m/s de ${r.d}°`:"registro 1 min: –";
+  setCB(cb22,t>=T_O22); setCB(cb21,t>=T_O21);
+  if(t>=TF&&t<T_O21+0.6){stEl.style.display="block"; stEl.textContent=t<T_T2?"T1 · curto cruzado B21–A22":t<T_O22?"T2 · propagação para A21":t<T_O21?"T3 · curto AB no C21":"Circuitos desligados";} else stEl.style.display="none";
+  if(document.activeElement!==scrub) scrub.value=Math.round(tau/TAU_TOTAL*1000);
+  requestAnimationFrame(frame);
+}
+// ---------- Controles da câmera ----------
+const viewAllBtn=document.getElementById("viewAll"), viewContactBtn=document.getElementById("viewContact");
+const wrapPi=x=>((x+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+function setView(v,fol){
+  goal.T=[...v.T]; goal.az=cam.az+wrapPi(v.az-cam.az); goal.el=v.el; goal.dist=v.dist;
+  follow=fol; viewContactBtn.classList.toggle("on",fol);
+}
+function goContact(){setView({T:goal.T,az:Math.PI+0.6,el:0.12,dist:5},true);}
+viewAllBtn.onclick=()=>setView(HOME,false);
+viewContactBtn.onclick=goContact;
+cv.addEventListener("dblclick",goContact);
+function panBy(dx,dy){
+  follow=false; viewContactBtn.classList.remove("on");
+  const s=cam.dist/basis.k;
+  for(let i=0;i<3;i++) goal.T[i]+=(-basis.r[i]*dx+basis.u[i]*dy)*s;
+}
+const ptrs=new Map(); let pinchD0=0, pinchDist0=0;
+cv.addEventListener("contextmenu",e=>e.preventDefault());
+cv.addEventListener("pointerdown",e=>{
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,pan:e.button===2||e.button===1||e.shiftKey});
+  cv.classList.add("drag");
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()]; pinchD0=Math.hypot(a.x-b.x,a.y-b.y); pinchDist0=goal.dist;}
+});
+cv.addEventListener("pointermove",e=>{
+  const p=ptrs.get(e.pointerId); if(!p) return;
+  const dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY;
+  if(ptrs.size>=2){const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(pinchD0>0) goal.dist=pinchDist0*pinchD0/Math.max(d,1); return;}
+  if(p.pan) panBy(dx,dy); else {goal.az-=dx*0.006; goal.el+=dy*0.006;}
+});
+function endPtr(e){ptrs.delete(e.pointerId); if(!ptrs.size) cv.classList.remove("drag");}
+cv.addEventListener("pointerup",endPtr); cv.addEventListener("pointercancel",endPtr);
+cv.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const d=e.deltaY*(e.deltaMode===1?16:1);
+  goal.dist*=Math.exp(Math.max(-120,Math.min(120,d))*0.0015);
+},{passive:false});
+
+resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
